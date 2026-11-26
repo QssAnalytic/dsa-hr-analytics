@@ -1,11 +1,11 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  if (!$("dsgrid") || !window.HRSite) return;
+  if (!document.querySelector(".dsw") || !window.HRSite) return;
   var SITE = window.HRSite, NS = "http://www.w3.org/2000/svg", fmt = window.HRUpload.fmt;
   var INK = "#2E2E38", Y = "#FFE600", BLUE = "#188CE5", RED = "#E0362C", GRID = "#E6E6EE", MUTED = "#747480";
   var TYPES = { hist: "Histogram", norm: "Histogram + normal curve", box: "Boxplot", kde: "Density (KDE)", ecdf: "ECDF", qq: "Q–Q plot" };
-  var PREF = ["Age", "MonthlyIncome", "TotalWorkingYears", "YearsAtCompany"], sel = null;
+  var PREF = ["Age", "MonthlyIncome", "TotalWorkingYears", "YearsAtCompany"];
   function el(tag, attrs, text) { var e = document.createElement(tag); if (attrs) for (var k in attrs) { if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]); } if (text != null) e.textContent = text; return e; }
   function sv(tag, a, text) { var e = document.createElementNS(NS, tag); for (var k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; return e; }
 
@@ -69,34 +69,40 @@
   var KEYS = { hist: "dark bars = counts · yellow = mean · blue dashed = median", norm: "grey = density · yellow = normal curve with the same mean and std", box: "yellow box = Q1–Q3 · black line = median · red = IQR outliers",
     kde: "smoothed density · yellow = mean · blue dashed = median", ecdf: "share of values at or below x · blue dashed = median", qq: "points on the yellow line = normal; curving away = skew or heavy tails" };
 
-  // ---------- UI ----------
+  // ---------- UI (one instance per .dsw) ----------
   function cols() { return SITE.numCols(); }
-  function buildList() { var L = $("ds-flist"), cs = cols(); L.textContent = "";
-    if (!sel) { sel = {}; var has = cs.some(function (c) { return PREF.indexOf(c.name) >= 0; }); cs.forEach(function (c, i) { if (has ? PREF.indexOf(c.name) >= 0 : i < 4) sel[c.name] = 1; }); }
-    cs.forEach(function (c) { var lab = el("label", { class: "chk" }), cb = el("input", { type: "checkbox", value: c.name }); cb.checked = !!sel[c.name];
-      cb.addEventListener("change", function () { if (cb.checked) sel[c.name] = 1; else delete sel[c.name]; render(); }); lab.appendChild(cb); lab.appendChild(el("span", null, c.name)); L.appendChild(lab); });
-    if (!cs.length) L.appendChild(el("p", { class: "muted" }, "No numerical features in this data.")); }
-  function types() { return [].slice.call(document.querySelectorAll(".dstypes input:checked")).map(function (x) { return x.value; }); }
-  function render() { var cs = cols().filter(function (c) { return sel[c.name]; }), ts = types(), g = $("dsgrid"); g.textContent = "";
-    $("ds-fcount").textContent = cs.length; $("dslede").textContent = "Choose the features and the chart types. Only the selected combinations are drawn, for " + SITE.dsName() + ".";
-    if (!cols().length) { $("dsmsg").textContent = "No numerical columns were found in " + SITE.dsName() + ". Columns need numbers in at least 90% of their filled cells."; return; }
-    if (!cs.length || !ts.length) { $("dsmsg").textContent = !cs.length ? "Open Features and select at least one feature." : "Select at least one chart type."; return; }
-    $("dsmsg").textContent = cs.length + " feature" + (cs.length > 1 ? "s" : "") + " × " + ts.length + " chart type" + (ts.length > 1 ? "s" : "") + " = " + cs.length * ts.length + " charts";
-    cs.forEach(function (c) { ts.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
-      h.appendChild(el("b", null, c.name)); h.appendChild(el("span", null, TYPES[t])); card.appendChild(h);
-      card.appendChild(draw(t, c));
-      card.appendChild(el("p", { class: "dsst" }, "n " + c.d.n.toLocaleString("en-US") + " · mean " + fmt(c.d.mean) + " · median " + fmt(c.d.median) + " · skew " + fmt(c.d.skew) + " · kurt " + fmt(c.d.kurt)));
-      card.appendChild(el("p", { class: "dskey" }, KEYS[t])); g.appendChild(card); }); }); }
-  function togglePanel(open) { var p = $("ds-fpanel"); p.hidden = !open; $("ds-fbtn").setAttribute("aria-expanded", open ? "true" : "false"); if (open) $("ds-fsearch").focus(); }
-  $("ds-fbtn").addEventListener("click", function () { togglePanel($("ds-fpanel").hidden); });
-  $("ds-fdone").addEventListener("click", function () { togglePanel(false); $("ds-fbtn").focus(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("ds-fpanel").hidden) { togglePanel(false); $("ds-fbtn").focus(); } });
-  document.addEventListener("click", function (e) { if (!$("ds-fpanel").hidden && !e.target.closest(".dsdd")) togglePanel(false); });
-  $("ds-fsearch").addEventListener("input", function () { var v = this.value.toLowerCase(); $("ds-flist").querySelectorAll("label").forEach(function (l) { l.hidden = v && l.textContent.toLowerCase().indexOf(v) < 0; }); });
-  $("ds-fall").addEventListener("click", function () { $("ds-flist").querySelectorAll("label:not([hidden]) input").forEach(function (c) { c.checked = true; sel[c.value] = 1; }); render(); });
-  $("ds-fnone").addEventListener("click", function () { sel = {}; $("ds-flist").querySelectorAll("input").forEach(function (c) { c.checked = false; }); render(); });
-  document.querySelectorAll(".dstypes input").forEach(function (x) { x.addEventListener("change", render); });
-  SITE.onData(function () { sel = null; buildList(); render(); });
-  buildList(); render();
-  window.HRDist = { select: function (features, chartTypes) { sel = {}; (features || []).forEach(function (f) { sel[f] = 1; }); document.querySelectorAll(".dstypes input").forEach(function (x) { x.checked = (chartTypes || ["hist"]).indexOf(x.value) >= 0; }); buildList(); render(); } };
+  var inst = [];
+  function mount(root) {
+    var Q = function (c) { return root.querySelector(c); }, sel = null;
+    function buildList() { var L = Q(".ds-flist"), cs = cols(); L.textContent = "";
+      if (!sel) { sel = {}; var has = cs.some(function (c) { return PREF.indexOf(c.name) >= 0; }); cs.forEach(function (c, i) { if (has ? PREF.indexOf(c.name) >= 0 : i < 4) sel[c.name] = 1; }); }
+      cs.forEach(function (c) { var lab = el("label", { class: "chk" }), cb = el("input", { type: "checkbox", value: c.name }); cb.checked = !!sel[c.name];
+        cb.addEventListener("change", function () { if (cb.checked) sel[c.name] = 1; else delete sel[c.name]; render(); }); lab.appendChild(cb); lab.appendChild(el("span", null, c.name)); L.appendChild(lab); });
+      if (!cs.length) L.appendChild(el("p", { class: "muted" }, "No numerical features in this data.")); }
+    function types() { return [].slice.call(root.querySelectorAll(".dstypes input:checked")).map(function (x) { return x.value; }); }
+    function render() { var cs = cols().filter(function (c) { return sel[c.name]; }), ts = types(), g = Q(".dsgrid"), msg = Q(".dsmsg"); g.textContent = "";
+      Q(".ds-fcount").textContent = cs.length; var lede = $("dslede"); if (lede && root.dataset.ds === "dsmain") lede.textContent = "Choose the features and the chart types. Only the selected combinations are drawn, for " + SITE.dsName() + ".";
+      if (!cols().length) { msg.textContent = "No numerical columns were found in " + SITE.dsName() + ". Columns need numbers in at least 90% of their filled cells."; return; }
+      if (!cs.length || !ts.length) { msg.textContent = !cs.length ? "Open Features and select at least one feature." : "Select at least one chart type."; return; }
+      msg.textContent = cs.length + " feature" + (cs.length > 1 ? "s" : "") + " × " + ts.length + " chart type" + (ts.length > 1 ? "s" : "") + " = " + cs.length * ts.length + " charts · " + SITE.dsName();
+      cs.forEach(function (c) { ts.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
+        h.appendChild(el("b", null, c.name)); h.appendChild(el("span", null, TYPES[t])); card.appendChild(h); card.appendChild(draw(t, c));
+        card.appendChild(el("p", { class: "dsst" }, "n " + c.d.n.toLocaleString("en-US") + " · mean " + fmt(c.d.mean) + " · median " + fmt(c.d.median) + " · skew " + fmt(c.d.skew) + " · kurt " + fmt(c.d.kurt)));
+        card.appendChild(el("p", { class: "dskey" }, KEYS[t])); g.appendChild(card); }); }); }
+    function toggle(open) { Q(".ds-fpanel").hidden = !open; Q(".ds-fbtn").setAttribute("aria-expanded", open ? "true" : "false"); if (open) Q(".ds-fsearch").focus(); }
+    Q(".ds-fbtn").addEventListener("click", function () { toggle(Q(".ds-fpanel").hidden); });
+    Q(".ds-fdone").addEventListener("click", function () { toggle(false); Q(".ds-fbtn").focus(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !Q(".ds-fpanel").hidden) { toggle(false); Q(".ds-fbtn").focus(); } });
+    document.addEventListener("click", function (e) { if (!Q(".ds-fpanel").hidden && !root.querySelector(".dsdd").contains(e.target)) toggle(false); });
+    Q(".ds-fsearch").addEventListener("input", function () { var v = this.value.toLowerCase(); Q(".ds-flist").querySelectorAll("label").forEach(function (l) { l.hidden = v && l.textContent.toLowerCase().indexOf(v) < 0; }); });
+    Q(".ds-fall").addEventListener("click", function () { Q(".ds-flist").querySelectorAll("label:not([hidden]) input").forEach(function (c) { c.checked = true; sel[c.value] = 1; }); render(); });
+    Q(".ds-fnone").addEventListener("click", function () { sel = {}; Q(".ds-flist").querySelectorAll("input").forEach(function (c) { c.checked = false; }); render(); });
+    root.querySelectorAll(".dstypes input").forEach(function (x) { x.addEventListener("change", render); });
+    var api = { reset: function () { sel = null; buildList(); render(); },
+      select: function (features, chartTypes) { sel = {}; (features || []).forEach(function (f) { sel[f] = 1; }); root.querySelectorAll(".dstypes input").forEach(function (x) { x.checked = (chartTypes || ["hist"]).indexOf(x.value) >= 0; }); buildList(); render(); } };
+    buildList(); render(); return api;
+  }
+  document.querySelectorAll(".dsw").forEach(function (r) { inst.push(mount(r)); });
+  SITE.onData(function () { inst.forEach(function (i) { i.reset(); }); });
+  window.HRDist = { select: function (f, t) { inst.forEach(function (i) { i.select(f, t); }); } };
 })();

@@ -9,7 +9,7 @@
     ["std", "Std deviation"], ["var", "Variance"], ["q1", "Q1 (25%)"], ["q3", "Q3 (75%)"], ["iqr", "IQR"], ["range", "Range"], ["skew", "Skewness"], ["kurt", "Kurtosis"]];
   var DEFAULT_M = { min: 1, max: 1, mean: 1, median: 1, std: 1 };
   var dataCbs = [];
-  var ds = null, last = null, dl = null, sortState = null, dqMode = "miss", descMode = "num", catType = "bar", cur = null, mcpP = null, catCur = null;
+  var ds = null, last = null, dl = null, sortState = null, dqMode = "miss", descMode = "num", catType = "bar", subMode = "tab", cur = null, mcpP = null, catCur = null;
   if (window.claude && window.claude.use) window.claude.use("downloads").then(function (d) { dl = d; }).catch(function () {});
 
   // ---------- dataset ----------
@@ -88,10 +88,15 @@
   function catCount() { $("catcount").textContent = sel("catlist").length + " categorical features selected"; }
   function setMode(m) { descMode = m; var cat = m === "cat";
     $("dm-num").classList.toggle("on", !cat); $("dm-cat").classList.toggle("on", cat); $("dm-num").setAttribute("aria-selected", !cat); $("dm-cat").setAttribute("aria-selected", cat);
-    document.querySelectorAll("#descpanel .nm").forEach(function (e) { e.hidden = cat; }); document.querySelectorAll("#descpanel .cm").forEach(function (e) { e.hidden = !cat; });
-    $("descout").hidden = cat || !last; var hasCat = !!$("catout").childElementCount; $("catout").hidden = !cat || !hasCat;
+    var chv = !cat && subMode === "charts";
+    $("ds-tab").classList.toggle("on", !chv); $("ds-chr").classList.toggle("on", chv); $("ds-tab").setAttribute("aria-selected", !chv); $("ds-chr").setAttribute("aria-selected", chv);
+    document.querySelector("#descpanel .dsub").hidden = cat;
+    document.querySelectorAll("#descpanel .nm").forEach(function (e) { e.hidden = cat || chv; }); document.querySelectorAll("#descpanel .cm").forEach(function (e) { e.hidden = !cat; });
+    document.querySelectorAll("#descpanel .chv").forEach(function (e) { e.hidden = !chv; });
+    $("descout").hidden = cat || chv || !last; var hasCat = !!$("catout").childElementCount; $("catout").hidden = !cat || !hasCat;
     $("colabpanel").hidden = true; resetDrive();
     if (cat) { cur = hasCat ? catCur : null; $("exportrow").hidden = !hasCat; $("exg").hidden = true; }
+    else if (chv) { cur = null; $("exportrow").hidden = true; }
     else { cur = last ? { mode: "num" } : null; $("exportrow").hidden = !last; $("exg").hidden = false; } }
   function freqRows(c) { var ks = c.keys.slice(), n = 0; ks.forEach(function (k) { n += c.cnt[k]; });
     if (c.coded) ks.sort(function (a, b) { return Number(a) - Number(b); }); else ks.sort(function (a, b) { return c.cnt[b] - c.cnt[a] || a.localeCompare(b); });
@@ -459,7 +464,8 @@
   $("fall").addEventListener("click", function () { $("featlist").querySelectorAll("label:not([hidden]) input").forEach(function (c) { c.checked = true; }); countSel(); });
   $("fnone").addEventListener("click", function () { $("featlist").querySelectorAll("input").forEach(function (c) { c.checked = false; }); countSel(); });
   $("b-apply").addEventListener("click", apply);
-  $("dm-num").addEventListener("click", function () { setMode("num"); }); $("dm-cat").addEventListener("click", function () { setMode("cat"); });
+  $("dm-num").addEventListener("click", function () { setMode("num"); });
+  $("ds-tab").addEventListener("click", function () { subMode = "tab"; setMode("num"); }); $("ds-chr").addEventListener("click", function () { subMode = "charts"; setMode("num"); }); $("dm-cat").addEventListener("click", function () { setMode("cat"); });
   $("catlist").addEventListener("change", catCount); $("b-freq").addEventListener("click", showFreq);
   $("call").addEventListener("click", function () { $("catlist").querySelectorAll("input").forEach(function (c) { c.checked = true; }); catCount(); });
   $("cnone").addEventListener("click", function () { $("catlist").querySelectorAll("input").forEach(function (c) { c.checked = false; }); catCount(); });
@@ -487,7 +493,7 @@
       site: { mode: descMode, applied: last ? { features: last.feats.map(function (f) { return f.name; }), metrics: last.cols.map(function (c) { return c.label; }) } : null,
         frequencies: catCur ? { features: catCur.names, chart: catCur.type } : null } }; },
     descriptive: function (features, metrics, pcts) {
-      if ($("descpanel").hidden) $("descpanel").hidden = false; setMode("num");
+      if ($("descpanel").hidden) $("descpanel").hidden = false; subMode = "tab"; setMode("num");
       var fs = {}, ms = {}, okF = [], okM = [], bad = [];
       (features || []).forEach(function (f) { fs[String(f).toLowerCase()] = 1; });
       $("featlist").querySelectorAll("input").forEach(function (c) { c.checked = !!fs[c.value.toLowerCase()]; if (c.checked) okF.push(c.value); });
