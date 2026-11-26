@@ -12,7 +12,7 @@ http.createServer((req, res) => {
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { "Content-Type": "text/plain" }); return res.end("Not found"); }
     const type = TYPES[path.extname(file).toLowerCase()] || "application/octet-stream";
-    const headers = { "Content-Type": type, "Cache-Control": p.endsWith(".html") ? "no-cache" : "public, max-age=3600", "X-Content-Type-Options": "nosniff" };
+    const headers = { "Content-Type": type, "Cache-Control": /\.(html|js|css)$/.test(p) || p === "/" ? "no-cache" : "public, max-age=3600", "X-Content-Type-Options": "nosniff" };
     if (/gzip/.test(req.headers["accept-encoding"] || "") && /text|javascript|json|svg|csv/.test(type)) {
       return zlib.gzip(data, (e, z) => { res.writeHead(200, Object.assign(headers, { "Content-Encoding": "gzip" })); res.end(z); });
     }
