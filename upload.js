@@ -8,9 +8,14 @@
   function sv(tag, attrs, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
   function fmt(v, d) { if (v == null || isNaN(v)) return "–"; var dd = d == null ? 2 : d; if (Math.abs(v) < 0.5 * Math.pow(10, -dd)) v = 0; if (Math.abs(v) < 1e-9) return "0"; if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toLocaleString("en-US"); return v.toLocaleString("en-US", { minimumFractionDigits: d == null ? 2 : d, maximumFractionDigits: d == null ? 2 : d }); }
   function fp(p) { return p < 0.001 ? "p < 0.001" : "p = " + p.toFixed(3); }
-  var MISSING = { "": 1, "na": 1, "n/a": 1, "nan": 1, "null": 1, "none": 1, "-": 1, "?": 1 };
+  var MISSING = { "": 1, "na": 1, "n/a": 1, "nan": 1, "null": 1, "none": 1, "-": 1, "?": 1, "#n/a": 1, "#value!": 1, "#div/0!": 1, ".": 1, "missing": 1, "unknown": 1 }, DECIMAL_COMMA = false;
   function isMissing(v) { return v == null || (typeof v === "string" && MISSING[v.trim().toLowerCase()] === 1) || (typeof v === "number" && isNaN(v)); }
-  function toNum(v) { if (typeof v === "number") return v; var t = String(v).trim().replace(/,/g, ""); if (t === "") return NaN; var n = Number(t); return isFinite(n) ? n : NaN; }
+  function toNum(v) { if (typeof v === "number") return v;
+    var t = String(v).trim().replace(/[\s\u00a0'’]/g, "").replace(/^[$€£₼¥₺]|[$€£₼¥₺%]$|AZN$|USD$|EUR$/gi, "");
+    if (t === "") return NaN;
+    if (DECIMAL_COMMA) t = t.replace(/\./g, "").replace(",", "."); else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, ""); else if (/^-?\d+,\d+$/.test(t)) t = t.replace(",", ".");
+    if (/^\(.*\)$/.test(t)) t = "-" + t.slice(1, -1);
+    var n = Number(t); return isFinite(n) ? n : NaN; }
 
   // ---------- parse ----------
   function parseTable(rows) {
@@ -21,7 +26,7 @@
     head.forEach(function (h, j) {
       var vals = body.map(function (r) { return r[j]; }), miss = 0, nums = [], numOk = 0, nonMiss = 0;
       vals.forEach(function (v) { if (isMissing(v)) { miss++; return; } nonMiss++; var n = toNum(v); if (!isNaN(n)) { numOk++; nums.push(n); } });
-      var numeric = nonMiss > 0 && numOk / nonMiss >= 0.95;
+      var numeric = nonMiss > 0 && numOk / nonMiss >= 0.9;
       cols.push({ name: h, raw: vals, missing: miss, numeric: numeric, nums: numeric ? nums : null });
     });
     return { head: head, rows: body, cols: cols, n: body.length };
@@ -30,6 +35,7 @@
     text = text.replace(/^﻿/, "");
     var first = text.slice(0, text.indexOf("\n") > 0 ? text.indexOf("\n") : text.length), delim = ",";
     [";", "\t", "|"].forEach(function (d) { if (first.split(d).length > first.split(delim).length) delim = d; });
+    DECIMAL_COMMA = delim === ";";
     var rows = [], row = [], cur = "", q = false;
     for (var i = 0; i < text.length; i++) { var ch = text[i];
       if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }

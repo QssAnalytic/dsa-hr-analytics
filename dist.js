@@ -79,6 +79,7 @@
   function types() { return [].slice.call(document.querySelectorAll(".dstypes input:checked")).map(function (x) { return x.value; }); }
   function render() { var cs = cols().filter(function (c) { return sel[c.name]; }), ts = types(), g = $("dsgrid"); g.textContent = "";
     $("ds-fcount").textContent = cs.length; $("dslede").textContent = "Choose the features and the chart types. Only the selected combinations are drawn, for " + SITE.dsName() + ".";
+    if (!cols().length) { $("dsmsg").textContent = "No numerical columns were found in " + SITE.dsName() + ". Columns need numbers in at least 90% of their filled cells."; return; }
     if (!cs.length || !ts.length) { $("dsmsg").textContent = !cs.length ? "Open Features and select at least one feature." : "Select at least one chart type."; return; }
     $("dsmsg").textContent = cs.length + " feature" + (cs.length > 1 ? "s" : "") + " × " + ts.length + " chart type" + (ts.length > 1 ? "s" : "") + " = " + cs.length * ts.length + " charts";
     cs.forEach(function (c) { ts.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
