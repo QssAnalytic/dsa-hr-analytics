@@ -9,7 +9,9 @@
     var o = ""; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); o += c < 256 ? s[i] : "?"; } return o; }
   function tw(s, size, bold) { s = latin(s); var w = 0; for (var i = 0; i < s.length; i++) w += (W[s[i]] || (s[i] >= "0" && s[i] <= "9" ? 556 : 556)); return w * size / 1000 * (bold ? 1.05 : 1); }
   function hex(c) { c = c.replace("#", ""); return [parseInt(c.substr(0, 2), 16) / 255, parseInt(c.substr(2, 2), 16) / 255, parseInt(c.substr(4, 2), 16) / 255].map(function (v) { return v.toFixed(3); }).join(" "); }
-  function PDF(w, h) { this.w = w; this.h = h; this.pages = []; this.cur = null; }
+  function PDF(w, h) { this.w = w; this.h = h; this.pages = []; this.cur = null; this.imgs = []; }
+  PDF.prototype.image = function (x, y, w, h, jpeg, pw, ph) { var k = this.imgs.length; this.imgs.push({ d: jpeg, w: pw, h: ph });
+    this.cur.push("q " + w.toFixed(2) + " 0 0 " + h.toFixed(2) + " " + x.toFixed(2) + " " + (this.h - y - h).toFixed(2) + " cm /Im" + k + " Do Q"); return this; };
   PDF.prototype.page = function (bg) { this.cur = []; this.pages.push(this.cur); if (bg) this.rect(0, 0, this.w, this.h, bg); return this; };
   PDF.prototype.rect = function (x, y, w, h, fill, stroke, lw) {
     var s = ""; if (fill) s += hex(fill) + " rg "; if (stroke) s += hex(stroke) + " RG " + (lw || 1) + " w ";
@@ -35,8 +37,11 @@
     objs[2] = "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + n + " >>";
     objs[fontF1] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
     objs[fontF2] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    var ib = first + n * 2, xo = this.imgs.length ? " /XObject << " + this.imgs.map(function (m, k) { return "/Im" + k + " " + (ib + k) + " 0 R"; }).join(" ") + " >>" : "";
+    this.imgs.forEach(function (m, k) { var bin = ""; for (var j = 0; j < m.d.length; j += 0x8000) bin += String.fromCharCode.apply(null, m.d.subarray(j, j + 0x8000));
+      objs[ib + k] = "<< /Type /XObject /Subtype /Image /Width " + m.w + " /Height " + m.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + m.d.length + " >>\nstream\n" + bin + "\nendstream"; });
     for (i = 0; i < n; i++) { var c = this.pages[i].join("\n"), pid = first + i * 2;
-      objs[pid] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + this.w + " " + this.h + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (pid + 1) + " 0 R >>";
+      objs[pid] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + this.w + " " + this.h + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>" + xo + " >> /Contents " + (pid + 1) + " 0 R >>";
       objs[pid + 1] = "<< /Length " + c.length + " >>\nstream\n" + c + "\nendstream"; }
     var out = "%PDF-1.4\n%âãÏÓ\n", offs = [];
     for (i = 1; i < objs.length; i++) { offs[i] = out.length; out += i + " 0 obj\n" + objs[i] + "\nendobj\n"; }
