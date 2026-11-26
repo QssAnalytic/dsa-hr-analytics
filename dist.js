@@ -90,6 +90,13 @@
       [[r.i, Y, 0], [r.z, INK, 1]].forEach(function (b) { if (!b[0]) return; var yy = y + 3 + b[2] * 12, w = X(b[0]) - LB, rc = sv("rect", { x: LB, y: yy, width: Math.max(1, w), height: 11, fill: b[1], stroke: b[2] ? "none" : "#8A7A00", "stroke-width": .6 });
         rc.appendChild(sv("title", {}, r.n + ": " + b[0] + (b[2] ? " by z-score" : " by IQR"))); svg.appendChild(rc); svg.appendChild(sv("text", { x: LB + w + 6, y: yy + 10, class: "dsax", style: "font-size:11.5px;fill:#2E2E38" }, String(b[0]))); }); });
     return svg; }
+  var swCache = {};
+  function normLine(c) { var key = SITE.dsName() + "|" + c.name + "|" + c.nums.length, r = swCache[key];
+    if (!r) { var xs = c.nums.length > 5000 ? c.nums.filter(function (_, i) { return i % Math.ceil(c.nums.length / 5000) === 0; }) : c.nums; r = swCache[key] = window.HRStats.shapiro(xs.slice()); r.sub = xs.length < c.nums.length ? xs.length : 0; }
+    var ok = r.p >= 0.05, w = el("div", { class: "dsnorm " + (ok ? "ok" : "no") });
+    w.appendChild(el("span", { class: "dsnb" }, ok ? "✓ Normal" : "✕ Not normal"));
+    w.appendChild(el("span", null, "Shapiro–Wilk p " + (r.p < 0.001 ? "< 0.001" : "= " + r.p.toFixed(3)) + " · α = 0.05 · W = " + r.W.toFixed(3) + (r.sub ? " · on " + r.sub.toLocaleString("en-US") + " sampled values" : "")));
+    return w; }
   var KEYS = { hist: "dark bars = counts · yellow = mean · blue dashed = median", norm: "grey = density · yellow = normal curve with the same mean and std", box: "yellow box = Q1–Q3 · black line = median · red = IQR outliers",
     outl: "yellow = values beyond Q1 − 1.5·IQR or Q3 + 1.5·IQR · dark = values with |z| > 3 (mean and sample std)", shape: "skewness: asymmetry (positive = long right tail) · excess kurtosis: tail weight (0 = normal) · dashed red = ±1", kde: "smoothed density · yellow = mean · blue dashed = median", ecdf: "share of values at or below x · blue dashed = median", qq: "points on the yellow line = normal; curving away = skew or heavy tails" };
 
@@ -121,6 +128,7 @@
       cs.forEach(function (c) { perT.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
         h.appendChild(el("b", null, c.name)); h.appendChild(el("span", null, TYPES[t])); card.appendChild(h); card.appendChild(draw(t, c));
         card.appendChild(el("p", { class: "dsst" }, "n " + c.d.n.toLocaleString("en-US") + " · mean " + fmt(c.d.mean) + " · median " + fmt(c.d.median) + " · skew " + fmt(c.d.skew) + " · kurt " + fmt(c.d.kurt)));
+        if (t === "norm") card.appendChild(normLine(c));
         card.appendChild(el("p", { class: "dskey" }, KEYS[t])); g.appendChild(card); }); }); }
     function toggle(open) { Q(".ds-fpanel").hidden = !open; Q(".ds-fbtn").setAttribute("aria-expanded", open ? "true" : "false"); if (open) Q(".ds-fsearch").focus(); }
     Q(".ds-fbtn").addEventListener("click", function () { toggle(Q(".ds-fpanel").hidden); });
