@@ -506,7 +506,9 @@
       catType = ["bar", "pie", "donut"].indexOf(chart) >= 0 ? chart : catType; catCount(); showFreq();
       return { shown: ok, chart: catType }; },
     quality: function (view) { dqMode = view === "outliers" ? "out" : "miss"; renderDQ(); $("quality").scrollIntoView({ behavior: "smooth", block: "start" }); return { shown: dqMode === "out" ? "outliers" : "missing values" }; },
-    nbName: function () { return nbName(); }
+    nbName: function () { return nbName(); },
+    numCols: function () { return ds.num.filter(function (c) { return c.d.std > 0; }).map(function (c) { return { name: c.name, nums: c.nums, d: c.d }; }); },
+    dsName: function () { return ds.name.replace(" (sample)", ""); }
   };
   window.HRHero = { dlNotebook: function () { loadTarget = "download"; var n = notebook(cells()); loadTarget = "drive"; return n; }, apply: apply, report: function () { return report(); }, slides: function () { return slides(); }, notebook: function () { return notebook(cells()); }, xlsx: function () { return PZ.xlsx(ds.head, ds.rows); } };
 })();
