@@ -176,7 +176,7 @@
     "\nSite state: " + JSON.stringify(I.site) + "\nLab tabs: " + tabs.map(function (t) { return (t === active ? "*" : "") + t.name; }).join(", ") + " (* = active; cell tools act on the active tab)\nNotebook: " + (cells.length ? cells.map(function (c, k) { return "cell " + (k + 1) + (c.n ? " (ran)" : " (not run)") + ": " + c.code.slice(0, 300).replace(/\n/g, "⏎"); }).join(" | ").slice(0, 6000) : "empty") +
     "\nPython: " + (py ? "ready" : "not started yet (it starts automatically when you run a cell)"); }
   function idx(n) { var i = Math.round(Number(n)) - 1; if (!(i >= 0 && i < cells.length)) throw new Error("There is no cell " + n + ". The notebook has " + cells.length + " cells."); return i; }
-  function note(t) { $("aistat").textContent = t; }
+  function note(t) { var n = $("aistat"); if (n) n.textContent = t; }
   var TOOLS = [
     { name: "add_cell", description: "Add a Python code cell to the Lab notebook (at the end, or after cell `after`) and run it unless run=false. Returns the cell number and its output text (tables as text, '[figure displayed]' for charts, errors with traceback).",
       inputSchema: { type: "object", properties: { code: { type: "string" }, run: { type: "boolean" }, after: { type: "integer", description: "1-based cell number to insert after" } }, required: ["code"] },
@@ -224,11 +224,8 @@
         if (e && e.text) turns.push({ role: "assistant", content: e.text }); else turns.pop(); note(e && e.code === "cancelled" ? "Stopped." : ""); })
       .then(function () { ctl = null; busy(false); $("aiin").focus(); });
   }
-  $("aiform").addEventListener("submit", function (e) { e.preventDefault(); var v = $("aiin").value; $("aiin").value = ""; send(v); });
-  $("aiin").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("aiform").requestSubmit(); } });
-  $("aistop").addEventListener("click", function () { if (ctl) ctl.abort(); });
-  $("aiclear").addEventListener("click", function () { if (ctl) ctl.abort(); turns = []; $("aimsgs").textContent = ""; note("New chat started."); });
-  document.querySelectorAll(".sug").forEach(function (b) { b.addEventListener("click", function () { send(b.textContent); }); });
+  document.querySelectorAll(".sug.cp").forEach(function (b) { b.addEventListener("click", function () {
+    (navigator.clipboard ? navigator.clipboard.writeText(b.textContent) : Promise.reject()).then(function () { $("cpmsg").textContent = "Copied. Paste it into the Claude side panel."; }, function () { $("cpmsg").textContent = "Select the text and copy it."; }); }); });
   function labMode() { var on = location.hash === "#lab"; document.body.classList.toggle("labmode", on); if (on) window.scrollTo(0, 0); }
   window.addEventListener("hashchange", labMode); labMode();
   $("labback").addEventListener("click", function () { history.pushState("", document.title, location.pathname + location.search); labMode(); });
