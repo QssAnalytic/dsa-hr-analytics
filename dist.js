@@ -4,7 +4,7 @@
   if (!document.querySelector(".dsw") || !window.HRSite) return;
   var SITE = window.HRSite, NS = "http://www.w3.org/2000/svg", fmt = window.HRUpload.fmt;
   var INK = "#2E2E38", Y = "#FFE600", BLUE = "#188CE5", RED = "#E0362C", GRID = "#E6E6EE", MUTED = "#747480";
-  var TYPES = { hist: "Histogram", norm: "Histogram + normal curve", box: "Boxplot", kde: "Density (KDE)", ecdf: "ECDF", qq: "Q–Q plot" };
+  var TYPES = { hist: "Histogram", norm: "Histogram + normal curve", box: "Boxplot", kde: "Density (KDE)", ecdf: "ECDF", qq: "Q–Q plot", shape: "Skewness & kurtosis" };
   var PREF = ["Age", "MonthlyIncome", "TotalWorkingYears", "YearsAtCompany"];
   function el(tag, attrs, text) { var e = document.createElement(tag); if (attrs) for (var k in attrs) { if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]); } if (text != null) e.textContent = text; return e; }
   function sv(tag, a, text) { var e = document.createElementNS(NS, tag); for (var k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; return e; }
@@ -66,8 +66,20 @@
       th.forEach(function (t, k) { svg.appendChild(sv("circle", { cx: F5.X(t), cy: F5.Y(Math.max(-lim, Math.min(lim, ob[k]))), r: 2.6, fill: INK, "fill-opacity": .6 })); });
       svg.appendChild(sv("text", { x: W - R, y: H - 4, "text-anchor": "end", class: "dsax" }, "theoretical z")); svg.appendChild(sv("text", { x: L, y: T + 8, class: "dsax" }, "sample z")); return svg; }
   }
+  function shapeSvg(cs) { var rows = cs.map(function (c) { return { n: c.name, s: c.d.skew, k: c.d.kurt }; }).filter(function (r) { return isFinite(r.s) && isFinite(r.k); }).sort(function (a, b) { return b.s - a.s; });
+    var rh = 22, top = 34, Wt = 1000, H2 = top + rows.length * rh + 34, LB = 190, pw = (Wt - LB - 70) / 2, svg = sv("svg", { viewBox: "0 0 " + Wt + " " + H2, class: "dssvg", role: "img", "aria-label": "Skewness and excess kurtosis by feature" });
+    [["s", "Skewness"], ["k", "Excess kurtosis"]].forEach(function (m, pi) { var x0 = LB + pi * (pw + 40), vals = rows.map(function (r) { return r[m[0]]; }), lo = Math.min(-1.2, Math.min.apply(null, vals)), hi = Math.max(1.2, Math.max.apply(null, vals));
+      lo = Math.floor(lo * 2) / 2; hi = Math.ceil(hi * 2) / 2; var X = function (v) { return x0 + (v - lo) / (hi - lo) * pw; };
+      svg.appendChild(sv("text", { x: x0, y: 16, class: "dsax", "font-weight": "700", fill: INK, style: "font-size:13px;fill:#2E2E38" }, m[1] + "  (|value| > 1 highlighted)"));
+      for (var t = Math.ceil(lo); t <= hi; t += (hi - lo > 6 ? 2 : 1)) { svg.appendChild(sv("line", { x1: X(t), x2: X(t), y1: top - 6, y2: H2 - 28, stroke: GRID })); svg.appendChild(sv("text", { x: X(t), y: H2 - 12, "text-anchor": "middle", class: "dsax" }, String(t))); }
+      [-1, 1].forEach(function (t) { var l = sv("line", { x1: X(t), x2: X(t), y1: top - 6, y2: H2 - 28, stroke: RED, "stroke-width": 1.2, "stroke-dasharray": "3 3" }); svg.appendChild(l); });
+      svg.appendChild(sv("line", { x1: X(0), x2: X(0), y1: top - 6, y2: H2 - 28, stroke: INK, "stroke-width": 1.2 }));
+      rows.forEach(function (r, i) { var v = r[m[0]], y = top + i * rh, xa = X(Math.min(0, v)), w = Math.abs(X(v) - X(0)), big = Math.abs(v) > 1;
+        var b = sv("rect", { x: xa, y: y + 3, width: Math.max(1, w), height: rh - 6, fill: big ? Y : "#C4C4CD", stroke: big ? "#8A7A00" : "#9A9AA6", "stroke-width": .6 }); b.appendChild(sv("title", {}, r.n + ": " + m[1].toLowerCase() + " " + fmt(v))); svg.appendChild(b);
+        if (pi === 0) svg.appendChild(sv("text", { x: LB - 10, y: y + rh / 2 + 4, "text-anchor": "end", class: "dsax", style: "font-size:12px;fill:#2E2E38" }, r.n)); }); });
+    return svg; }
   var KEYS = { hist: "dark bars = counts · yellow = mean · blue dashed = median", norm: "grey = density · yellow = normal curve with the same mean and std", box: "yellow box = Q1–Q3 · black line = median · red = IQR outliers",
-    kde: "smoothed density · yellow = mean · blue dashed = median", ecdf: "share of values at or below x · blue dashed = median", qq: "points on the yellow line = normal; curving away = skew or heavy tails" };
+    shape: "skewness: asymmetry (positive = long right tail) · excess kurtosis: tail weight (0 = normal) · dashed red = ±1", kde: "smoothed density · yellow = mean · blue dashed = median", ecdf: "share of values at or below x · blue dashed = median", qq: "points on the yellow line = normal; curving away = skew or heavy tails" };
 
   // ---------- UI (one instance per .dsw) ----------
   function cols() { return SITE.numCols(); }
@@ -84,8 +96,13 @@
       Q(".ds-fcount").textContent = cs.length; var lede = $("dslede"); if (lede && root.dataset.ds === "dsmain") lede.textContent = "Choose the features and the chart types. Only the selected combinations are drawn, for " + SITE.dsName() + ".";
       if (!cols().length) { msg.textContent = "No numerical columns were found in " + SITE.dsName() + ". Columns need numbers in at least 90% of their filled cells."; return; }
       if (!cs.length || !ts.length) { msg.textContent = !cs.length ? "Open Features and select at least one feature." : "Select at least one chart type."; return; }
-      msg.textContent = cs.length + " feature" + (cs.length > 1 ? "s" : "") + " × " + ts.length + " chart type" + (ts.length > 1 ? "s" : "") + " = " + cs.length * ts.length + " charts · " + SITE.dsName();
-      cs.forEach(function (c) { ts.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
+      var nT = ts.filter(function (t) { return t !== "shape"; }).length, nC = cs.length * nT + (ts.indexOf("shape") >= 0 ? 1 : 0); msg.textContent = cs.length + " feature" + (cs.length > 1 ? "s" : "") + " · " + ts.length + " chart type" + (ts.length > 1 ? "s" : "") + " = " + nC + " chart" + (nC > 1 ? "s" : "") + " · " + SITE.dsName();
+      if (ts.indexOf("shape") >= 0) { var sc = el("figure", { class: "dscard wide" }), sh = el("figcaption", { class: "dsch" }); sh.appendChild(el("b", null, cs.length + " features")); sh.appendChild(el("span", null, TYPES.shape)); sc.appendChild(sh);
+        sc.appendChild(shapeSvg(cs)); var big = cs.filter(function (c) { return Math.abs(c.d.skew) > 1; }).sort(function (a, b) { return Math.abs(b.d.skew) - Math.abs(a.d.skew); });
+        sc.appendChild(el("p", { class: "dsst" }, big.length ? big.length + " of " + cs.length + " features have |skew| > 1, led by " + big.slice(0, 2).map(function (c) { return c.name + " (" + fmt(c.d.skew) + ")"; }).join(" and ") + "." : "No selected feature has |skew| > 1."));
+        sc.appendChild(el("p", { class: "dskey" }, KEYS.shape)); g.appendChild(sc); }
+      var perT = ts.filter(function (t) { return t !== "shape"; });
+      cs.forEach(function (c) { perT.forEach(function (t) { var card = el("figure", { class: "dscard" }), h = el("figcaption", { class: "dsch" });
         h.appendChild(el("b", null, c.name)); h.appendChild(el("span", null, TYPES[t])); card.appendChild(h); card.appendChild(draw(t, c));
         card.appendChild(el("p", { class: "dsst" }, "n " + c.d.n.toLocaleString("en-US") + " · mean " + fmt(c.d.mean) + " · median " + fmt(c.d.median) + " · skew " + fmt(c.d.skew) + " · kurt " + fmt(c.d.kurt)));
         card.appendChild(el("p", { class: "dskey" }, KEYS[t])); g.appendChild(card); }); }); }
