@@ -494,9 +494,27 @@ body.reportmode main>*:not(#report),body.reportmode>section:not(#report),body.re
 .dscard.wide{grid-column:1/-1}
 .dsnorm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px;font-size:12.5px;font-variant-numeric:tabular-nums}
 .dsnb{font-weight:700;padding:3px 9px;color:#fff}.dsnorm.no .dsnb{background:#E0362C}.dsnorm.ok .dsnb{background:#168A3E}
-</style></head><body class='web'><nav class='top'><div class='wrap row'><p class='brand'><b>Data Science Academy</b> · Statistics &amp; Machine Learning</p><div class='links'><button id='rep-toggle' type='button' class='rtog' aria-pressed='false'>Create report</button><a id='rep-link' class='rlink' href='#report' hidden>Report (0)</a><a href='#data'>Data</a><a href='#lab'>Lab</a><a href='#quality'>Quality</a></div></div><div class='sbar'><div class='wrap sbrow'><p class='sbl'>Sessions</p><button type='button' class='stab on' data-s='1' aria-pressed='true'><b>Session 1</b><span>Available now</span></button><button type='button' class='stab' data-s='2' aria-pressed='false'><b>Session 2</b><span>From 5 Dec</span></button><button type='button' class='stab' data-s='3' aria-pressed='false'><b>Session 3</b><span>From 12 Dec</span></button><button type='button' class='stab' data-s='4' aria-pressed='false'><b>Session 4</b><span>From 19 Dec</span></button><button type='button' class='stab' data-s='5' aria-pressed='false'><b>Session 5</b><span>From 26 Dec</span></button><button type='button' class='stab' data-s='6' aria-pressed='false'><b>Session 6</b><span>From 2 Jan</span></button></div></div></nav><main id='sess1'><header class='cover hero' id='data'><div class='wrap'>
+
+/* v38 UX: three-step flow (progress indicator), quieter secondary actions, bigger drop target, locked sessions */
+.flow{list-style:none;display:flex;gap:0;margin:22px 0 34px;padding:0;max-width:880px;counter-reset:f}
+.flow li{flex:1;display:flex;gap:12px;align-items:flex-start;position:relative;padding-right:18px}
+.flow li+li::before{content:'';position:absolute;left:-14px;top:17px;width:12px;height:2px;background:#5A5A68}
+.flow i{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:14px;border:2px solid #5A5A68;color:#C4C4CD}
+.flow b{display:block;color:#fff;font-size:16px}.flow small{display:block;color:#A0A0AE;font-size:13px;margin-top:2px;line-height:1.35}
+.flow li.done i{background:var(--y);border-color:var(--y);color:#1A1A24;font-size:0}.flow li.done i::after{content:'✓';font-size:15px}
+.flow li.now i{border-color:var(--y);color:var(--y);box-shadow:0 0 0 4px rgba(255,230,0,.16)}
+.flow li.now b{color:var(--y)}
+.rtog{font-size:13px !important;padding:7px 12px !important;border-color:#5A5A68 !important;color:#C4C4CD !important}
+.rtog[aria-pressed='true']{border-color:var(--y) !important;color:var(--y) !important}
+.upt{min-height:92px;transition:border-color .15s,background .15s}
+.upt:hover,.upt.drag{border-color:var(--y);background:rgba(255,230,0,.06)}
+.stab:not(.on) span{color:#6E6E7C}
+.stab:not(.on):not([data-s='1']) b{color:#9A9AA8}
+@media screen and (max-width:900px){.flow{flex-direction:column;gap:12px}.flow li+li::before{display:none}}
+
+</style></head><body class='web'><nav class='top'><div class='wrap row'><p class='brand'><b>Data Science Academy</b> · Statistics &amp; Machine Learning</p><div class='links'><button id='rep-toggle' type='button' class='rtog' aria-pressed='false'>Create report</button><a id='rep-link' class='rlink' href='#report' hidden>Report (0)</a><a href='#data'>Data</a><a href='#lab'>Lab</a><a href='#quality'>Quality</a></div></div><div class='sbar'><div class='wrap sbrow'><p class='sbl'>Sessions</p><button type='button' class='stab on' data-s='1' aria-pressed='true'><b>Session 1</b><span>Available now</span></button><button type='button' class='stab' data-s='2' aria-pressed='false'><b>Session 2</b><span>🔒 From 5 Dec</span></button><button type='button' class='stab' data-s='3' aria-pressed='false'><b>Session 3</b><span>🔒 From 12 Dec</span></button><button type='button' class='stab' data-s='4' aria-pressed='false'><b>Session 4</b><span>🔒 From 19 Dec</span></button><button type='button' class='stab' data-s='5' aria-pressed='false'><b>Session 5</b><span>🔒 From 26 Dec</span></button><button type='button' class='stab' data-s='6' aria-pressed='false'><b>Session 6</b><span>🔒 From 2 Jan</span></button></div></div></nav><main id='sess1'><header class='cover hero' id='data'><div class='wrap'>
 <h1>Data: <span>describe it</span><br>in one click</h1>
-<p class='lede'>Upload a CSV or Excel file, or use the HR sample. Pick numerical or categorical features, apply, then open the code in Colab or export the result as a PDF report or slides.</p>
+<ol class='flow' id='flow' aria-label='Three steps'><li data-f='1' class='done'><i>1</i><span><b>Load data</b><small>Upload a file or use the HR sample</small></span></li><li data-f='2' class='now'><i>2</i><span><b>Describe</b><small>Numbers, frequencies and charts</small></span></li><li data-f='3'><i>3</i><span><b>Use it</b><small>Open in Colab or export a PDF</small></span></li></ol>
 <div class='ws'>
 <div class='wsrow'>
 <label id='updrop' class='upt' for='upfile'><b>⬆ Upload CSV / Excel</b><span>or drop a file here</span><input id='upfile' type='file' accept='.csv,.xlsx,.tsv,.txt'></label>
@@ -615,4 +633,11 @@ body.reportmode main>*:not(#report),body.reportmode>section:not(#report),body.re
   var m=/^#session-([1-6])$/.exec(location.hash);if(m&&m[1]!=="1")show(+m[1]);
 })();
 </script>
-<script>window.LAB_ON=true;window.LAB_CDN=true;</script><script src='stats.js?v=1795731672'></script><script src='upload.js?v=1795731672'></script><script src='pdfzip.js?v=1795731672'></script><script src='hero.js?v=1795816000'></script><script src='dist.js?v=1795731672'></script><script src='report.js?v=1795731672'></script><script src='lab.js?v=1795731672'></script><script src='s1python.js?v=1795808000'></script></body></html>
+<script>window.LAB_ON=true;window.LAB_CDN=true;</script><script src='stats.js?v=1795731672'></script><script src='upload.js?v=1795731672'></script><script src='pdfzip.js?v=1795731672'></script><script src='hero.js?v=1795816000'></script><script src='dist.js?v=1795731672'></script><script src='report.js?v=1795731672'></script><script src='lab.js?v=1795731672'></script><script src='s1python.js?v=1795808000'></script><script>
+(function(){var f=document.getElementById('flow');if(!f)return;function set(n){[].forEach.call(f.children,function(li){var k=+li.dataset.f;li.className=k<n?'done':k===n?'now':''})}
+var out=document.getElementById('descout'),cat=document.getElementById('catout');function chk(){if((out&&!out.hidden)||(cat&&!cat.hidden))set(3);else set(2)}
+if(window.MutationObserver){var mo=new MutationObserver(chk);[out,cat].forEach(function(e){e&&mo.observe(e,{attributes:true,attributeFilter:['hidden']})})}
+['b-drive','b-export','b-colab','b-drive2','b-nb'].forEach(function(id){var b=document.getElementById(id);b&&b.addEventListener('click',function(){set(4)})});
+var d=document.getElementById('updrop');if(d){['dragenter','dragover'].forEach(function(e){d.addEventListener(e,function(){d.classList.add('drag')})});['dragleave','drop'].forEach(function(e){d.addEventListener(e,function(){d.classList.remove('drag')})})}
+})();
+</script></body></html>
