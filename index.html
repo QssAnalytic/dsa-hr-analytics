@@ -17,7 +17,7 @@ nav.top .row{height:64px}
 .cover h1{font-size:76px;line-height:1.02;font-weight:300;letter-spacing:-.02em;max-width:900px}
 .cover h1 span{font-weight:800;color:var(--y)}
 .lede{font-size:21px;color:#C4C4CD;max-width:760px;margin:30px 0 50px;font-weight:300}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #4A4A58;max-width:980px}
+.kpout{margin:18px 0 6px}.kpout .dsk{margin:0 0 8px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #4A4A58;max-width:980px}
 .kpis div{padding:26px 24px 30px 0;border-right:1px solid #4A4A58;margin-right:24px}.kpis div:last-child{border:0}
 .kpis b{display:block;font-size:52px;font-weight:800;line-height:1}.kpis span{font-size:14px;color:#A0A0AE;text-transform:uppercase;letter-spacing:.06em}
 .cta{display:flex;gap:14px;margin:40px 0 70px}
@@ -498,7 +498,6 @@ body.reportmode main>*:not(#report),body.reportmode>section:not(#report),body.re
 <p class='tag'>1 Session · Data Science Academy · Statistics and Machine Learning class</p>
 <h1>Data: <span>describe it</span><br>in one click</h1>
 <p class='lede'>Upload a CSV or Excel file, or use the HR sample. Pick numerical or categorical features, apply, then open the code in Colab or export the result as a PDF report or slides.</p>
-<div class='kpis'><div><b id='kp-rows'>–</b><span>rows</span></div><div><b id='kp-cols'>–</b><span>columns</span></div><div><b id='kp-num'>–</b><span>numerical</span></div><div><b id='kp-miss'>–</b><span>missing values</span></div></div>
 <div class='ws'>
 <div class='wsrow'>
 <label id='updrop' class='upt' for='upfile'><b>⬆ Upload CSV / Excel</b><span>or drop a file here</span><input id='upfile' type='file' accept='.csv,.xlsx,.tsv,.txt'></label>
@@ -506,6 +505,7 @@ body.reportmode main>*:not(#report),body.reportmode>section:not(#report),body.re
 <div class='wsbtns'><button id='b-full' type='button' class='btn ghost'>Show full data ⤢</button><button id='b-desc' type='button' class='btn'>Descriptive analytics</button></div>
 </div>
 <p id='upmsg' class='upmsg2' role='status'></p>
+<div id='kpbox' class='kpout' hidden><p class='dsk'>YOUR DATA AT A GLANCE</p><div class='kpis'><div><b id='kp-rows'>–</b><span>rows</span></div><div><b id='kp-cols'>–</b><span>columns</span></div><div><b id='kp-num'>–</b><span>numerical</span></div><div><b id='kp-miss'>–</b><span>missing values</span></div></div></div>
 <div id='descpanel' class='dp' hidden>
 <div class='dmode'><div class='dmg'><p class='dmlab'>Feature types</p><div class='dmrow' role='tablist' aria-label='Feature types'><button id='dm-num' type='button' role='tab' class='dmt on' aria-selected='true'>Continuous</button><button id='dm-cat' type='button' role='tab' class='dmt' aria-selected='false'>Categorical</button></div></div><div class='dsub'><p class='dmlab'>Descriptive analytics</p><div class='dmrow' role='tablist' aria-label='Descriptive analytics'><button id='ds-tab' type='button' role='tab' class='dmt dst on' aria-selected='true'>Numerical</button><button id='ds-chr' type='button' role='tab' class='dmt dst' aria-selected='false'>Charts</button></div></div></div>
 <div class='dpcol chv' hidden><div class='dsw' data-ds='dshero'>
@@ -616,4 +616,4 @@ body.reportmode main>*:not(#report),body.reportmode>section:not(#report),body.re
   var m=/^#session-([1-6])$/.exec(location.hash);if(m&&m[1]!=="1")show(+m[1]);
 })();
 </script>
-<script>window.LAB_ON=true;window.LAB_CDN=true;</script><script src='stats.js?v=1795731672'></script><script src='upload.js?v=1795731672'></script><script src='pdfzip.js?v=1795731672'></script><script src='hero.js?v=1795731672'></script><script src='dist.js?v=1795731672'></script><script src='report.js?v=1795731672'></script><script src='lab.js?v=1795731672'></script><script src='s1python.js?v=1795808000'></script></body></html>
+<script>window.LAB_ON=true;window.LAB_CDN=true;</script><script src='stats.js?v=1795731672'></script><script src='upload.js?v=1795731672'></script><script src='pdfzip.js?v=1795731672'></script><script src='hero.js?v=1795816000'></script><script src='dist.js?v=1795731672'></script><script src='report.js?v=1795731672'></script><script src='lab.js?v=1795731672'></script><script src='s1python.js?v=1795808000'></script></body></html>

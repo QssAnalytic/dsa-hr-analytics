@@ -22,6 +22,7 @@
     var miss = T.cols.reduce(function (s, c) { return s + c.missing; }, 0);
     $("kp-rows").textContent = T.n.toLocaleString("en-US"); $("kp-cols").textContent = T.cols.length;
     $("kp-num").textContent = T.num.length; $("kp-miss").textContent = miss.toLocaleString("en-US");
+    $("kpbox").hidden = !!isSample; // the numbers show only for an uploaded file, as its first output
     $("dsname").textContent = name;
     renderDQ();
     dataCbs.forEach(function (f) { try { f(); } catch (x) {} });
